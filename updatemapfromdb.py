@@ -61,7 +61,7 @@ def get_driver_map_points(connection_string: str) -> List[Dict]:
             (
                 SELECT COUNT(*) 
                 FROM DriverSchedules s
-                WHERE s.DriverDataId = d.Id
+                WHERE s.DriverExternalId = d.DriverExternalId
                 AND s.IsDeleted = 0
                 AND s.StartTime <=  ?
                 AND s.EndTime >= ?
@@ -69,7 +69,7 @@ def get_driver_map_points(connection_string: str) -> List[Dict]:
             (
                 SELECT TOP 1 s.VaktLocation
                 FROM DriverSchedules s
-                WHERE s.DriverDataId = d.Id
+                WHERE s.DriverExternalId = d.DriverExternalId
                 AND s.IsDeleted = 0
                 AND s.StartTime <= ?
                 AND s.EndTime >= ?
@@ -78,7 +78,7 @@ def get_driver_map_points(connection_string: str) -> List[Dict]:
             ROW_NUMBER() OVER (PARTITION BY d.Id ORDER BY v.LastUpdated DESC) AS rn
         FROM AbaxVehicles v
         INNER JOIN Drivers d ON d.Id = v.DriverId
-        WHERE v.Latitude != 0 AND v.Longitude != 0
+        WHERE v.Latitude > 61 AND v.Longitude != 0 AND d.IsMontor = 1
     )
 
     SELECT *
