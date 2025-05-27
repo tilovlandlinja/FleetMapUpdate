@@ -1,0 +1,20 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+env/
+
+# Credentials and secrets
+credentials.json
+data.json
+cron.log
+# IDE/editor folders
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
