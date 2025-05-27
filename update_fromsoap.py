@@ -59,14 +59,20 @@ def upsert_vehicle2(cursor, vehicle, driverid):
     cursor.execute(sql, params)
 
 def main():
-    # Koble til SOAP
-    client = Client(wsdl=wsdl_url)
-    session_id = client.service.Login(abax_username, abax_password)
+    try:
+        # Koble til SOAP
+        client = Client(wsdl=wsdl_url)
+        session_id = client.service.Login(abax_username, abax_password)
 
-    # Hent posisjoner med tilgjengelig sjåfør
-    positions = client.service.GetTriplogUnitPositionsDriverAvailable(session_id)
+        # Hent posisjoner med tilgjengelig sjåfør
+        positions = client.service.GetTriplogUnitPositionsDriverAvailable(session_id)
+    except Exception as e:
+        print(f"Feil ved oppkobling eller henting fra SOAP-tjenesten: {e}")
+        return
     
-
+    if not positions:
+        print("Ingen posisjoner funnet.")
+        return
     # Koble til databasen
     conn_str = (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
