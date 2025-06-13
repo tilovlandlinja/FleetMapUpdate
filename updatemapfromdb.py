@@ -18,17 +18,19 @@ dbusername = credentials["db_user"]
 dbpassword = credentials["db_password"]
 
 
-def get_driver_map_points(connection_string: str) -> List[Dict]:
-    conn = pyodbc.connect(connection_string)
-    cursor = conn.cursor()
+def get_driver_map_points(cursor) -> List[Dict]:
+    """ conn = pyodbc.connect(connection_string)
+    cursor = conn.cursor() """
     today = datetime.now().date()
     
-    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now_str = datetime.now().replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("Europe/Oslo")).strftime('%Y-%m-%d %H:%M:%S')
     
-    print(now_str)
+    print( f"Now string {now_str}")
 
-    now = datetime.now(timezone.utc)
-    one_hour_ago = now - timedelta(hours=2)
+    """ now = datetime.now(timezone.utc)
+    one_hour_ago = now + timedelta(hours=2)
+
+    print(f"one_hour_ago: {one_hour_ago}") """
 
     sql = """
         WITH RankedVehicles AS (
@@ -130,7 +132,7 @@ def get_driver_map_points(connection_string: str) -> List[Dict]:
         
         result.append(record)
 
-    conn.close()
+    #conn.close()
     return result
 
 def get_access_token(client_id, client_secret, token_url):
@@ -358,11 +360,12 @@ def sync_arcgis(layer, fresh_data):
             #print( f"lastUpdated: {utc_time} {existing.attributes['lastUpdated']} {local_time} {millisec}" )
             try:
                 dt1 = datetime.fromtimestamp(feature.attributes['lastUpdated'] / 1000, tz=timezone.utc)
+                dt1_ago = dt1 + timedelta(minutes=1)
             except Exception as e:
                 print(f"Error converting lastUpdated: {e}")
                 
-            if utc_time > dt1.replace(tzinfo=None):
-                print( f"lastUpdated: {utc_time} {dt1} {local_time}" )
+            if utc_time > dt1_ago.replace(tzinfo=None):
+                print( f"lastUpdated: {utc_time} {dt1_ago} {local_time}" )
                 changed = True
             if feature.attributes.get('isActive') != d.get("isActive"):
                 print( f"active: {feature.attributes.get('isActive')} {d.get('isActive')}" )
@@ -376,8 +379,9 @@ def sync_arcgis(layer, fresh_data):
             if feature.attributes.get('visible') == 0:
                 print( f"visible: {feature.attributes.get('visible')} {d.get('DriverExternalId')}" )
                 changed = True
-            
-            changed = True
+            if( d.get('hasShift') ):
+                print( f"hasShift: {d.get("Name")} {feature.attributes.get('hasShift')} {d.get('hasShift')}" )
+            #changed = True
             if changed:
                 #print( f"existing: {d.get('Name')} {d.get('PhoneNumber')} {d.get('Direction')}   {utc_time.isoformat() if local_time else None} Er aktiv {d.get("isActive")} har vakt {d.get("HasShift")}" )
                 #print(existing)
@@ -568,29 +572,24 @@ def main():
 
     for vehicle in data['items']:
         driver = vehicle.get('driver')
-        
-       
         if not driver or not driver.get('external_id'):
-            #print("Driver is None")
             continue
-        
-         
-        """if( driver.get('external_id') !=  "90325" ):
-            
-            
-            continue """
-        #print( driver.get('external_id') )
-        driverid = upsert_driver(cursor, driver)
-        #print(f"Processing vehicle: {vehicle.get('license_plate', {}).get('number')}")
-        #print(f"Driver ID: {driverid}")
-        upsert_vehicle(cursor, vehicle, driverid)
+        try:
+            driverid = upsert_driver(cursor, driver)
+            upsert_vehicle(cursor, vehicle, driverid)
+            conn.commit()
+        except Exception as e:
+            print(f"Feil ved oppdatering av {driver.get('external_id')}: {e}")
+            conn.rollback()
     
-    conn.commit()
-    cursor.close()
-    conn.close()
+    #conn.commit()
+    
     #return "kake"
     # Hent data fra databasen
-    fresh_data = get_driver_map_points(conn_str)
+    fresh_data = get_driver_map_points(cursor)
+
+    cursor.close()
+    conn.close()
 
     # 🔐 2. Logg inn til ArcGIS
     gis = GIS("https://www.arcgis.com", credentials["arcgis_username"], credentials["arcgis_password"])

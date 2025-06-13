@@ -21,7 +21,8 @@ password = credentials["card_api_password"]  # Passord for API
 
 
 def get_all_employees():
-    url = apiurl + "employees?includeHired=true&includeExternal=false"
+    #url = apiurl + "employees?includeHired=true&includeExternal=false"
+    url = "https://www.sikkerhetskort.no/rest/v2/employees?includeExternal=true"
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -181,7 +182,7 @@ def upsert_driver( cursor, driver, courses ):
         row = cursor.fetchone()
 
         if not row:
-            print("Fant ingen sjåfør med oppgitte kriterier.")
+            #print("Fant ingen sjåfør med oppgitte kriterier.")
             return None
 
         driver_id, prevent_flag = row
@@ -217,7 +218,11 @@ def upsert_driver( cursor, driver, courses ):
         AccessGroupShort = ?,
         UpdatedAt = ?,
         IsMontor = ?,
-        Courses = ?
+        Courses = ?,
+        Email = CASE 
+            WHEN (Email IS NULL OR LTRIM(RTRIM(Email)) = '') THEN ? 
+            ELSE Email 
+        END
     WHERE Id = ?;
     """
 
@@ -230,6 +235,7 @@ def upsert_driver( cursor, driver, courses ):
         datetime.now(),  # UpdatedAt – ingen naturlig mapping, sett til nåværende tidspunkt
         isMontor,  # IsMontor – ingen naturlig mapping, sett til 0 eller 1 basert på sjåførens tittel
         courses if courses else "",
+        driver.get('email') if driver.get('email') else "Unkown",  # Bruker email eller mobilnummer som DriverExternalId
         driver_id # WHERE bruker employeeNumber som DriverExternalId
     ]
     
@@ -248,7 +254,7 @@ def upsert_driver( cursor, driver, courses ):
 
     
 
-    #print(f"Updated driver with ID: {driver.get('employeeId')}")
+    print(f"Updated driver with ID: {driver.get('employeeId')}")
 
     """ cards = get_saftey_card(driver.get('employeeId'))
 
@@ -283,10 +289,18 @@ def main():
     #print(json.dumps(employees, indent=4))
     if employees:
         for employee in employees:
-            """ if employee.get('firstName') != 'Asgeir':
+            
+            #if employee.get('firstName') != 'Mads':
+            #print(employee.get('companyName'))
+            #if  'Nordvest Nett AS' not in employee.get('companyName'):
+            """ if 'Nordvest Nett AS' not in employee.get('companyName'):
+                continue
+            if  'Joachim' not in employee.get('firstName'):
                 continue """
-           # print( employee) 
-            if employee.get('email') and employee.get('hiredCompanyName') != 'EVINY SOLUTIONS AS':
+
+            #print(f"Processing employee: {employee.get('firstName')} {employee.get('lastName')} {employee.get('email')}, ID: {employee.get('mobilePhone') }")
+            # print( employee) 
+            if employee.get('email') and employee.get('companyName') == 'LINJA AS':
                 courses = ""
                 driver_id = employee.get('employeeId')
 
@@ -323,15 +337,56 @@ def main():
                 conn.commit()
                 #print(f"Updated driver with ID: {employee.get('email')}")
                 #print(f" Name: {employee.get('email')}, ")
-            elif employee.get('mobilePhone'):
-                print(f"Processing employee: {employee.get('mobilePhone')}, ID: {employee.get('employeeId')}")
+            elif employee.get('mobilePhone') and employee.get('hiredCompanyName') == 'EVINY SOLUTIONS AS':
+                print(f"Processing EVINY SOLUTIONS AS: {employee.get('mobilePhone')}, ID: {employee.get('employeeId')}")
                 courses = ""
                 driver_id = employee.get('employeeId')
 
                 harlastebil = any(entry["employeeId"] == driver_id for entry in lastebil)
+                hardrone = any(entry["employeeId"] == driver_id for entry in drone)
+                harstore_aggregat = any(entry["employeeId"] == driver_id for entry in store_aggregat)
+                harsafty_cut = any(entry["employeeId"] == driver_id for entry in safety_cut)
+
+                kompetansarray = []
 
                 if( harlastebil ):
-                    courses = 'Lastebil'
+                    kompetansarray.append('Lastebil')
+                if( hardrone ):
+                    kompetansarray.append('Drone')
+                if( harstore_aggregat ):
+                    kompetansarray.append('Store aggregat')
+                if( harsafty_cut ):
+                    kompetansarray.append('Safety cut')
+                if( len(kompetansarray) > 0 ):
+                    courses = ', '.join(kompetansarray)
+                #shortname, description = get_saftey_card(employee.get('employeeId'))
+
+                upsert_driver(cursor, employee, courses )
+                conn.commit()
+                #print(f"Updated driver with ID: {employee.get('email')}")
+                #print(f" Name: {employee.get('email')}, ")
+            elif employee.get('mobilePhone') and employee.get('companyName') == 'Nordvest Nett AS':
+                print(f"Processing Nordvest Nett AS: {employee.get('mobilePhone')}, ID: {employee.get('employeeId')}")
+                courses = ""
+                driver_id = employee.get('employeeId')
+
+                harlastebil = any(entry["employeeId"] == driver_id for entry in lastebil)
+                hardrone = any(entry["employeeId"] == driver_id for entry in drone)
+                harstore_aggregat = any(entry["employeeId"] == driver_id for entry in store_aggregat)
+                harsafty_cut = any(entry["employeeId"] == driver_id for entry in safety_cut)
+
+                kompetansarray = []
+
+                if( harlastebil ):
+                    kompetansarray.append('Lastebil')
+                if( hardrone ):
+                    kompetansarray.append('Drone')
+                if( harstore_aggregat ):
+                    kompetansarray.append('Store aggregat')
+                if( harsafty_cut ):
+                    kompetansarray.append('Safety cut')
+                if( len(kompetansarray) > 0 ):
+                    courses = ', '.join(kompetansarray)
                 #shortname, description = get_saftey_card(employee.get('employeeId'))
 
                 upsert_driver(cursor, employee, courses )
