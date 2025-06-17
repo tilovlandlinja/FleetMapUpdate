@@ -288,12 +288,6 @@ def main():
             print(f"Getting course: {key} with ID: {value}")
             allcourses.append( { key : get_courses(value) } )
 
-    lastebil = get_courses('cc782c81-3e7d-4357-b931-8affc0f79aee')
-    drone = get_courses('a0f2b8c1-3e7d-4a5b-bc6f-9d0e1f2c3a4b') #Drone
-    store_aggregat = get_courses('86d5c218-49f8-4498-8fdf-f2ff7a21ad23') #Store aggregat
-    safety_cut = get_courses('9ef9a6d9-cf37-417b-a7ab-6c9260f4414d') # Safety cut
-    korgbil = get_courses('9ef9a6d9-cf37-417b-a7ab-6c9260f4414d') # Korgbil
-
     conn_str = (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
         f"SERVER={server};"
@@ -331,34 +325,6 @@ def main():
                 if( len(kompetansarray) > 0 ):
                     courses = ', '.join(kompetansarray)
                     print(f"Courses found for employee: {kompetansarray}, ID: {driver_id}")
-
-                """ harlastebil = any(entry["employeeId"] == driver_id for entry in lastebil)
-                hardrone = any(entry["employeeId"] == driver_id for entry in drone)
-                harstore_aggregat = any(entry["employeeId"] == driver_id for entry in store_aggregat)
-                harsafty_cut = any(entry["employeeId"] == driver_id for entry in safety_cut) """
-
-
-                """ if 'tore' in employee.get('email'):
-                    print(json.dumps(employee, indent=4))
-                    print(f"Processing employee: {employee.get('email')}, ID: {employee.get('employeeNumber')}")
-                    card = get_saftey_card(employee.get('employeeId'))
-                    #print(json.dumps(card, indent=4))
-                    print(f"Card: {card}")
-                else:
-                    continue """
-                
-                """ kompetansarray = []
-
-                if( harlastebil ):
-                    kompetansarray.append('Lastebil')
-                if( hardrone ):
-                    kompetansarray.append('Drone')
-                if( harstore_aggregat ):
-                    kompetansarray.append('Store aggregat')
-                if( harsafty_cut ):
-                    kompetansarray.append('Safety cut')
-                if( len(kompetansarray) > 0 ):
-                    courses = ', '.join(kompetansarray) """
                 #shortname, description = get_saftey_card(employee.get('employeeId'))
 
                 upsert_driver(cursor, employee, courses )
