@@ -271,10 +271,28 @@ def upsert_driver( cursor, driver, courses ):
 def main():
 
     employees = get_all_employees()
+
+    courcesids = [
+        { 'Lastebil' : 'cc782c81-3e7d-4357-b931-8affc0f79aee'},  # Lastebil
+        { 'Drone' : 'a0f2b8c1-3e7d-4a5b-bc6f-9d0e1f2c3a4b' },  # Drone
+        { 'Store aggregat' : '86d5c218-49f8-4498-8fdf-f2ff7a21ad23' },  # Store aggregat
+        { 'Saftey cut' : '9ef9a6d9-cf37-417b-a7ab-6c9260f4414d' } ,  # Safety cut
+        { 'Korgbil' : '8fc4907e-df3c-4ae2-8e61-da55a189bc11'},  # Korgbil
+        { 'Tilgang Statnett'  : 'fd8ffbaa-9e65-41f8-8960-bcbcd73bccf5' },  # Statnett
+    ]
+
+    allcourses = [] # Henter alle kurs for å sjekke om det er noen endringer
+
+    for course in courcesids:
+        for key, value in course.items():
+            print(f"Getting course: {key} with ID: {value}")
+            allcourses.append( { key : get_courses(value) } )
+
     lastebil = get_courses('cc782c81-3e7d-4357-b931-8affc0f79aee')
     drone = get_courses('a0f2b8c1-3e7d-4a5b-bc6f-9d0e1f2c3a4b') #Drone
     store_aggregat = get_courses('86d5c218-49f8-4498-8fdf-f2ff7a21ad23') #Store aggregat
     safety_cut = get_courses('9ef9a6d9-cf37-417b-a7ab-6c9260f4414d') # Safety cut
+    korgbil = get_courses('9ef9a6d9-cf37-417b-a7ab-6c9260f4414d') # Korgbil
 
     conn_str = (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
@@ -304,10 +322,20 @@ def main():
                 courses = ""
                 driver_id = employee.get('employeeId')
 
-                harlastebil = any(entry["employeeId"] == driver_id for entry in lastebil)
+                kompetansarray = []
+
+                for course in allcourses:
+                    if any(entry["employeeId"] == driver_id for entry in course.get(list(course.keys())[0], [])):
+                        kompetansarray.append(list(course.keys())[0])
+
+                if( len(kompetansarray) > 0 ):
+                    courses = ', '.join(kompetansarray)
+                    print(f"Courses found for employee: {kompetansarray}, ID: {driver_id}")
+
+                """ harlastebil = any(entry["employeeId"] == driver_id for entry in lastebil)
                 hardrone = any(entry["employeeId"] == driver_id for entry in drone)
                 harstore_aggregat = any(entry["employeeId"] == driver_id for entry in store_aggregat)
-                harsafty_cut = any(entry["employeeId"] == driver_id for entry in safety_cut)
+                harsafty_cut = any(entry["employeeId"] == driver_id for entry in safety_cut) """
 
 
                 """ if 'tore' in employee.get('email'):
@@ -319,7 +347,7 @@ def main():
                 else:
                     continue """
                 
-                kompetansarray = []
+                """ kompetansarray = []
 
                 if( harlastebil ):
                     kompetansarray.append('Lastebil')
@@ -330,7 +358,7 @@ def main():
                 if( harsafty_cut ):
                     kompetansarray.append('Safety cut')
                 if( len(kompetansarray) > 0 ):
-                    courses = ', '.join(kompetansarray)
+                    courses = ', '.join(kompetansarray) """
                 #shortname, description = get_saftey_card(employee.get('employeeId'))
 
                 upsert_driver(cursor, employee, courses )
@@ -342,23 +370,14 @@ def main():
                 courses = ""
                 driver_id = employee.get('employeeId')
 
-                harlastebil = any(entry["employeeId"] == driver_id for entry in lastebil)
-                hardrone = any(entry["employeeId"] == driver_id for entry in drone)
-                harstore_aggregat = any(entry["employeeId"] == driver_id for entry in store_aggregat)
-                harsafty_cut = any(entry["employeeId"] == driver_id for entry in safety_cut)
-
                 kompetansarray = []
 
-                if( harlastebil ):
-                    kompetansarray.append('Lastebil')
-                if( hardrone ):
-                    kompetansarray.append('Drone')
-                if( harstore_aggregat ):
-                    kompetansarray.append('Store aggregat')
-                if( harsafty_cut ):
-                    kompetansarray.append('Safety cut')
+                for course in allcourses:
+                    if any(entry["employeeId"] == driver_id for entry in course.get(list(course.keys())[0], [])):
+                        kompetansarray.append(list(course.keys())[0])
                 if( len(kompetansarray) > 0 ):
                     courses = ', '.join(kompetansarray)
+                    print(f"Courses found for employee: {kompetansarray}, ID: {driver_id}")
                 #shortname, description = get_saftey_card(employee.get('employeeId'))
 
                 upsert_driver(cursor, employee, courses )
@@ -370,23 +389,13 @@ def main():
                 courses = ""
                 driver_id = employee.get('employeeId')
 
-                harlastebil = any(entry["employeeId"] == driver_id for entry in lastebil)
-                hardrone = any(entry["employeeId"] == driver_id for entry in drone)
-                harstore_aggregat = any(entry["employeeId"] == driver_id for entry in store_aggregat)
-                harsafty_cut = any(entry["employeeId"] == driver_id for entry in safety_cut)
-
                 kompetansarray = []
-
-                if( harlastebil ):
-                    kompetansarray.append('Lastebil')
-                if( hardrone ):
-                    kompetansarray.append('Drone')
-                if( harstore_aggregat ):
-                    kompetansarray.append('Store aggregat')
-                if( harsafty_cut ):
-                    kompetansarray.append('Safety cut')
+                for course in allcourses:
+                    if any(entry["employeeId"] == driver_id for entry in course.get(list(course.keys())[0], [])):
+                        kompetansarray.append(list(course.keys())[0])
                 if( len(kompetansarray) > 0 ):
                     courses = ', '.join(kompetansarray)
+                    print(f"Courses found for employee: {kompetansarray}, ID: {driver_id}")
                 #shortname, description = get_saftey_card(employee.get('employeeId'))
 
                 upsert_driver(cursor, employee, courses )
