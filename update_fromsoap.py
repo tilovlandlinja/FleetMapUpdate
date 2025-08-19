@@ -33,8 +33,8 @@ def upsert_vehicle(cursor, vehicle):
 
     if cursor.rowcount > 0:
         print(f"🔄 Oppdaterte Status for SerialNo {serial_no} → {new_status}")
-    else:
-        print(f"✅ Status for SerialNo {serial_no} var allerede {new_status}")
+    #else:
+        #print(f"✅ Status for SerialNo {serial_no} var allerede {new_status}")
 
 def upsert_vehicle2(cursor, vehicle, driverid):
     sql = """
@@ -82,50 +82,22 @@ def main():
     cursor = conn.cursor()
 
     for pos in positions:
-        try:
-            """ unit_info = client.service.GetUnitInfo(session_id, pos.SerialNo)
-            
-            print(unit_info)
-            print(pos)
-            driver_id = None
-            if unit_info.DriverId:
-                try:
-                    driver_info = client.service.GetDriverInfo(session_id, unit_info.DriverId)
-                    driver_data = {
-                        'external_id': unit_info.DriverId,
-                        'name': safe(driver_info.PersonName, "Unknown"),
-                        'email': safe(driver_info.Email, ""),
-                        'phone_number': safe(driver_info.Mobile, "")
-                    }
-                    #driver_id = upsert_driver(cursor, driver_data)
-                except Exception as e:
-                    print(f"Feil ved henting av førerinfo: {e}") """
-                    
+        try:        
+            if( pos.SerialNo == 'MUS300881'  or pos.SerialNo == 'ANS195357' ):
+                print( pos )
             status = 'active' if pos.DriverAvailable == 1 else 'inactive'
 
             vehicle_data = {
-                """'asset_id': safe(unit_info.SerialNumber, pos.SerialNo),
-                'license_plate': safe(unit_info.VehicleRegistrationNumber, "Unknown"),
-                #'make': safe(unit_info.Make, "Unknown"),
-                'model': safe(unit_info.Description, "Unknown"),
-                'vin': None,
-                'latitude': safe(pos.Latitude, 0),
-                'longitude': safe(pos.Longitude, 0),
-                'speed': safe(pos.Speed, 0),
-                'direction': safe(pos.Course, 0),
-                'timestamp': pos.PositionTimeStamp,
-                'accuracy': None,
-                'moving': None,"""
                 'serial_number' : pos.SerialNo, 
                 'status': status
             }
-            print(f"Behandler kjøretøy {pos.SerialNo} status {status} {pos.DriverAvailable}")
-            """print(vehicle_data) """
+            #print(f"Behandler kjøretøy {pos.SerialNo} status {status} {pos.DriverAvailable}")
             upsert_vehicle(cursor, vehicle_data)
+            conn.commit()
         except Exception as e:
             print(f"Feil ved behandling av kjøretøy {pos.SerialNo}: {e}")
 
-    conn.commit()
+    #conn.commit()
     cursor.close()
     conn.close()
     print("Import fra ABAX SOAP API fullført.")

@@ -166,6 +166,10 @@ def get_data_from_abax(api_key, url):
         return None
 
 def upsert_driver(cursor, driver):
+    if driver and "Rune" in driver.get('name', ''):
+        print("== START upsert_driver ==")
+        print(f"DriverExternalId: {driver.get('external_id')}")
+        print(f"Name: {driver.get('name')}")
     sql = """
     MERGE INTO Drivers AS target
     USING (SELECT ? AS DriverExternalId) AS source
@@ -195,7 +199,7 @@ def upsert_driver(cursor, driver):
     ]
 
     #return id for driver
-    #cursor.execute(sql, params)
+    cursor.execute(sql, params)
      # Så hent ID eksplisitt
     sql_select = "SELECT Id FROM Drivers WHERE DriverExternalId = ?"
     cursor.execute(sql_select, (driver.get('external_id'),))
@@ -231,6 +235,8 @@ def upsert_vehicle(cursor, vehicle, driverid):
     #     updatedtime = datetime.fromisoformat(updatedtime.replace("Z", "+00:00"))
     # else:
     #     updatedtime = datetime.now()
+    if( driverid == 131 ):
+        print(f"Oppdaterer kjøretøy for driver {driverid} med AssetId {vehicle.get('asset_id')}")
 
     sql = """MERGE INTO AbaxVehicles AS target
     USING (SELECT ? AS AssetId) AS source
@@ -365,7 +371,7 @@ def sync_arcgis(layer, fresh_data):
                 print(f"Error converting lastUpdated: {e}")
                 
             if utc_time > dt1_ago.replace(tzinfo=None):
-                print( f"lastUpdated: {utc_time} {dt1_ago} {local_time}" )
+                #print( f"lastUpdated: {utc_time} {dt1_ago} {local_time}" )
                 changed = True
             if feature.attributes.get('isActive') != d.get("isActive"):
                 print( f"active: {feature.attributes.get('isActive')} {d.get('isActive')}" )
@@ -573,9 +579,15 @@ def main():
     for vehicle in data['items']:
         driver = vehicle.get('driver')
         if not driver or not driver.get('external_id'):
+            #if( vehicle.get('asset_id') == 'c232a33b75d94f6c8000072aed86fe5a' ):
+            #print( vehicle )
+            #print(f"Skipping vehicle {vehicle.get('asset_id')}: No driver information found.")
+            upsert_vehicle(cursor, vehicle, None)
+            conn.commit()
             continue
         try:
             driverid = upsert_driver(cursor, driver)
+            conn.commit()
             upsert_vehicle(cursor, vehicle, driverid)
             conn.commit()
         except Exception as e:

@@ -11,6 +11,7 @@ env/
 credentials.json
 data.json
 cron.log
+cronsoap.log
 # IDE/editor folders
 .vscode/
 .idea/
